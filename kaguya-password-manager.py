@@ -19,19 +19,30 @@ def kaguya_newusername(domainname):
 
 # This is the search function for an existing domain.
 def kaguya_existingdomain():
-    domainname = str(input('Please enter a domain name to begin the search.'))
+    domainname = str(input("Please enter a domain name to begin the search: "))
     if domainname in database:
         print(f"{domainname} found in database.")
         # If we have reached this point, we have found the domainname in the database.
         # We now want to retrieve the username, and subsequently the password.
+        kaguya_existingusername(domainname)
     else:
         print(f"{domainname} was not found in database.")
         confirm_domaincreation = str(
             input(
-                "Create new domiain in the database? (Enter Y to proceed or any other button to restart the search.)"
+                "Create new domain in the database? (Enter Y to proceed or any other button to restart the search.)"
             )
         )
         if confirm_domaincreation.lower() == "y":
             kaguya_newdomain()
-            print('Domain has been saved into the database!')
+            print("Domain has been saved into the database!")
         else:
+            kaguya_existingdomain()
+
+
+def kaguya_existingusername(domainname):
+    username = str(input("Please enter the username: "))
+    if username in database[domainname]:
+        clip.copy(database[domainname][username])
+        print(
+            f"{username} found in database under {domainname}. Password copied to clipboard!"
+        )
