@@ -1,1 +1,5 @@
-1. Map out project requirements and flow
+MVP
+1. Create the database
+2. Create the input function for new domains, new usernames and new passwords
+3. Create the copy to clipboard function
+4. Create the search function
