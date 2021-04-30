@@ -1,8 +1,8 @@
 import pyperclip as clip
 
-
 # This is the database.
 database = {}
+
 
 # This is the input function for a new domain.
 def kaguya_newdomain():
@@ -22,7 +22,8 @@ def kaguya_existingdomain():
     domainname = str(input("Please enter a domain name to begin the search: "))
     if domainname in database:
         print(f"{domainname} found in database.")
-        # If we have reached this point, we have found the domainname in the database.
+        # If we have reached this point,
+        #  we have found the domainname in the database.
         # We now want to retrieve the username, and subsequently the password.
         kaguya_existingusername(domainname)
     else:
@@ -46,3 +47,7 @@ def kaguya_existingusername(domainname):
         print(
             f"{username} found in database under {domainname}. Password copied to clipboard!"
         )
+
+
+def main():
+    pass
