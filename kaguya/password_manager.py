@@ -1,52 +1,81 @@
-import pyperclip as clip
+import pyperclip, argparse, sys
+
+# Test variables.
+domain = "email.com"
+user1 = "username1"
+pw1 = "password1"
 
 # This is the database.
+# placeholder
 database = {}
 
+class dbEntry:
+    def __init__(self, domain_name, username, password):
+        self.domain_name = domain_name
+        self.username = username
+        self.password = password
+        database.update({domain_name: {username, password}})
+
+    # This is the input method for a new username.
+    def newusername(self, domain_name, username):
+        self.newusername = username
+        database[domain_name][self.newusername] = ""
+    
+    # This is the search method for an existing username.
+    def searchusername(self, domain_name, username):
+        if username in database[domain_name]:
+            print(f"{username} was found in the database.")
+            prompt_copypass = str(
+                input(
+                    f"Copy password to clipboard? (Enter Y to proceed or any other button to exit the program.)"
+                )
+            )
+
+            if prompt_copypass.lower() == "y":
+                pyperclip.copy(database[domainname][username])
+                print("Password copied to clipboard!")
+        # else:
+        # print(f"{username} was not found in the database.")
+        # prompt_usercreate = str(
+        # input(
+        # "Create new username under the domain in the database? (Enter Y to proceed or any other button to restart the search.)"
+        # )
+        # )
+        # if prompt_usercreate.lower() == "y":
+        # self.newusername(domain_name, username)
+        # self.searchusername(domain_name, username)
+
+    # This is the input method for a new password.
+    def newpassword(self, domain_name, username, password)
+        pass
 
 # This is the input function for a new domain.
-def kaguya_newdomain():
-    newdomain = str(input("Please enter the new domain name: "))
-    database[newdomain] = {}
-
-
-# This is the input function for a new username.
-def kaguya_newusername(domainname):
-    newusername = str(input("Please enter the new username: "))
-    newpassword = str(input("Please enter the new password: "))
-    database[domainname][newusername] = newpassword
-
+    def newdomain(self, domain_name):
+        self.newdomain = domain_name
+        database[self.newdomain] = {}
+        return "Domain has been created in the database!"
 
 # This is the search function for an existing domain.
-def kaguya_existingdomain():
-    domainname = str(input("Please enter a domain name to begin the search: "))
-    if domainname in database:
-        print(f"{domainname} found in database.")
+def searchdomain(self, domain_name):
+    if domain_name in database:
+        print(f"{domain_name} was found in the database.")
         # If we have reached this point,
-        #  we have found the domainname in the database.
+        # we have found the domainname in the database.
         # We now want to retrieve the username, and subsequently the password.
-        kaguya_existingusername(domainname)
-    else:
-        print(f"{domainname} was not found in database.")
-        confirm_domaincreation = str(
-            input(
-                "Create new domain in the database? (Enter Y to proceed or any other button to restart the search.)"
-            )
-        )
-        if confirm_domaincreation.lower() == "y":
-            kaguya_newdomain()
-            print("Domain has been saved into the database!")
-        else:
-            kaguya_existingdomain()
+        return database[domain_name]
+    # else:
+    # print(f"{domain_name} was not found in the database.")
+    # prompt_domcreate = str(
+    # input(
+    # "Create new domain in the database? (Enter Y to proceed or any other button to restart the search.)"
+    # )
+    # )
+    # if prompt_domcreate.lower() == "y":
+    # self.newdomain(domain_name)
+    # self.searchdomain(domain_name)
 
 
-def kaguya_existingusername(domainname):
-    username = str(input("Please enter the username: "))
-    if username in database[domainname]:
-        clip.copy(database[domainname][username])
-        print(
-            f"{username} found in database under {domainname}. Password copied to clipboard!"
-        )
+
 
 
 def main():
