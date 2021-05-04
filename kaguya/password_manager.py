@@ -1,4 +1,4 @@
-import pyperclip, argparse, sys
+import pyperclip
 
 # Test variables.
 domain = "email.com"
@@ -8,6 +8,7 @@ pw1 = "password1"
 # This is the database.
 # placeholder
 database = {}
+
 
 class dbEntry:
     def __init__(self, domain_name, username, password):
@@ -20,40 +21,31 @@ class dbEntry:
     def newusername(self, domain_name, username):
         self.newusername = username
         database[domain_name][self.newusername] = ""
-    
+
     # This is the search method for an existing username.
     def searchusername(self, domain_name, username):
         if username in database[domain_name]:
             print(f"{username} was found in the database.")
             prompt_copypass = str(
                 input(
-                    f"Copy password to clipboard? (Enter Y to proceed or any other button to exit the program.)"
+                    "Copy password to clipboard? (Enter Y to proceed or any other button to exit the program.)"
                 )
             )
 
             if prompt_copypass.lower() == "y":
-                pyperclip.copy(database[domainname][username])
+                pyperclip.copy(database[domain_name][username])
                 print("Password copied to clipboard!")
-        # else:
-        # print(f"{username} was not found in the database.")
-        # prompt_usercreate = str(
-        # input(
-        # "Create new username under the domain in the database? (Enter Y to proceed or any other button to restart the search.)"
-        # )
-        # )
-        # if prompt_usercreate.lower() == "y":
-        # self.newusername(domain_name, username)
-        # self.searchusername(domain_name, username)
 
     # This is the input method for a new password.
-    def newpassword(self, domain_name, username, password)
+    def newpassword(self, domain_name, username, password):
         pass
 
-# This is the input function for a new domain.
+    # This is the input function for a new domain.
     def newdomain(self, domain_name):
         self.newdomain = domain_name
         database[self.newdomain] = {}
         return "Domain has been created in the database!"
+
 
 # This is the search function for an existing domain.
 def searchdomain(self, domain_name):
@@ -73,9 +65,6 @@ def searchdomain(self, domain_name):
     # if prompt_domcreate.lower() == "y":
     # self.newdomain(domain_name)
     # self.searchdomain(domain_name)
-
-
-
 
 
 def main():
