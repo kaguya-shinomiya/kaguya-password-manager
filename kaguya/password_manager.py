@@ -1,4 +1,4 @@
-import pyperclip, argparse, os, sys, random, string
+import pyperclip, argparse, os, sys, random, string, re
 
 # Test variables.
 domain = "email.com"
@@ -80,13 +80,13 @@ def password_check(password):
         1 lowercase letter or more.
     """
     # Checks the length.
-    length_error = len(password) < 8 or len(password)
+    length_error = len(password) < 8
 
     # Checks for digit.
     digit_error = re.search(r"\d", password) is None
 
     # Checks for symbol.
-    symbol_error = re.search(r"[!#$%&'()*+,-./[\\\]^_`{|}~" + r'"]', password) is None
+    symbol_error = re.search(r"\W", password) is None
 
     # Checks for uppercase letter.
     uppercase_error = re.search(r"[A-Z]", password) is None
@@ -112,14 +112,24 @@ def generate():
     Creates a password based on above criteria.
     Checks itself to be a strong password before being returned as a value.
     """
-    strong_password = []
-    password_characters = (
-        string.ascii_letters + string.digits + r"[!#$%&'()*+,-./[\\\]^_`{|}~" + r'"]'
-    )
+    upperletters = string.ascii_uppercase
+    lowerletters = string.ascii_lowercase
+    letters = upperletters + lowerletters
+    digits = string.digits
+    symbols = "[!#$%&'()*+,-.\^_`{|}~" + r'"]'
+    allchar = upperletters + lowerletters + digits + symbols
+
     length = random.randint(8, 32)
-    for i in range(length + 1):
-        strong_password.append(random.choice(password_characters))
-    strong_password = "".join(password)
+    strong_password = [
+        random.choice(upperletters),
+        random.choice(lowerletters),
+        random.choice(digits),
+        random.choice(symbols),
+    ]
+    for i in range(length - 3):
+        strong_password.append(random.choice(allchar))
+    random.shuffle(strong_password)
+    strong_password = "".join(strong_password)
     # Check that it is strong
     if not password_check(strong_password):
         generate()
@@ -172,3 +182,6 @@ args = kaguya_parser.parse_args()
 
 def main():
     pass
+
+
+print(generate())
