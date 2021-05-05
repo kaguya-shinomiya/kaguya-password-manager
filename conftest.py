@@ -1,30 +1,17 @@
 import os
-import sqlite3
 from pathlib import Path
 
 import pytest
 
-test_db_file = Path(__file__).parent / "tests" / "data" / "testsqlite"
+from kaguya.db_utils import EntityManager, SqlCommands
 
 
-@pytest.fixture(scope="session", autouse=True)
-def db_conn():
-    conn = sqlite3.connect(test_db_file)
-    c = conn.cursor()
-    c.execute(
-        """
-        CREATE TABLE IF NOT EXISTS dummy (
-            id INTEGER PRIMARY KEY,
-            username TEXT NOT NULL,
-            password TEXT NOT NULL
-        );
-    """
-    )
-    yield conn
-    conn.close()  # runs after all tests
+@pytest.fixture
+def em(scope="session", autouse=True):
+    test_db_file = Path(__file__).parent / "tests" / "data" / "testsqlite"
+    em = EntityManager(test_db_file)
+    em.create_table(SqlCommands.create_credentials_table)
+    yield em
+    # teardown
+    em.conn.close()
     os.remove(test_db_file)
-
-
-@pytest.fixture(scope="module")
-def insert_into_dummy_sql():
-    return "INSERT INTO dummy(username, password) VALUES(?,?);"
