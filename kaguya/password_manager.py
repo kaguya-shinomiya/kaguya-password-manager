@@ -1,4 +1,4 @@
-import pyperclip
+import pyperclip, argparse, os, sys, random, string, re
 
 # Test variables.
 domain = "email.com"
