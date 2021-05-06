@@ -1,3 +1,3 @@
-from .kaguya_password_manager import main
+from .password_manager import main
 
 main()
