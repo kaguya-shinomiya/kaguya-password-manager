@@ -1,40 +1,64 @@
 import sqlite3
 from pathlib import Path
-from string import Template
-from typing import Iterable
+from typing import Dict, Tuple
 
 from loguru import logger
 
 
-def create_connection(db_file: Path) -> sqlite3.Connection:
-    """create database connection to SQLite db"""
-    conn = None  # initialize empty var here
-    try:
+class EntityManager:
+    def __init__(self, db_file: Path):
+        self.conn = self._create_connection(db_file)
+
+    @classmethod
+    def _create_connection(cls, db_file: Path) -> sqlite3.Connection:
+        """
+        Create database connection to SQLite db.
+
+        :param db_file: absolute path to db file
+        :returns: Connection object
+        """
         conn = sqlite3.connect(db_file)
-    except sqlite3.Error as e:
-        logger.error(repr(e))
-    return conn
+        logger.info("connected to database")
+        return conn
 
-
-def create_table(conn: sqlite3.Connection, create_table_sql: str) -> None:
-    """create table using `create_table_sql`"""
-    try:
-        c = conn.cursor()
+    def create_table(self, create_table_sql: str) -> None:
+        """create table using `create_table_sql`"""
+        c = self.conn.cursor()
         c.execute(create_table_sql)
-    except sqlite3.Error as e:
-        logger.error(repr(e))
+        logger.info("created credentials table")
+
+    def insert_chika(
+        self,
+        name: str,
+        username: str,
+        password: str,
+    ) -> Tuple:
+        """inserts a new set of credentials"""
+        c = self.conn.cursor()
+        c.execute(SqlCommands.insert_one_blob, [name, username, password])
+        c.execute(SqlCommands.query_one_blob, [name])  # get the entire object
+        return c.fetchone()
+
+    def update_chika(
+        self,
+        chika_name: str,
+        **params: Dict,
+    ) -> Tuple:
+        """updates one set of credentials"""
+        cols_to_set = ", ".join([f"{k} = '{v}'" for (k, v) in params.items()])
+        update_chika_sql = f"""
+            UPDATE credentials
+            SET {cols_to_set}
+            WHERE name = '{chika_name}';
+            """
+        logger.debug(update_chika_sql)
+        c = self.conn.cursor()
+        c.execute(update_chika_sql)
+        c.execute(SqlCommands.query_one_blob, [params.get("name", chika_name)])
+        return c.fetchone()
 
 
-def insert(conn: sqlite3.Connection, insert_sql: str, vals: Iterable) -> None:
-    """insert a row into some table"""
-    try:
-        c = conn.cursor()
-        c.execute(insert_sql, vals)
-    except sqlite3.Error as e:
-        logger.error(repr(e))
-
-
-class sql_commands:
+class SqlCommands:
     create_credentials_table = """
         CREATE TABLE IF NOT EXISTS credentials (
             id INTEGER PRIMARY KEY,
@@ -49,12 +73,7 @@ class sql_commands:
         VALUES(?,?,?);
         """
 
-    update_one_blob: Template = Template(
-        """
-        UPDATE credentials
-        SET name = ?,
-            username = ?,
-            password = ?
+    query_one_blob = """
+        SELECT name, username, password FROM credentials
         WHERE name = ?;
         """
-    )
