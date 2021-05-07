@@ -95,34 +95,83 @@ class HandleArgs:
 
         if args.retrieve:
             logger.info("retrieve option found")
-            self.retrieve()
+            self.retrieve(args.domain, args.username)
+
+        if args.edit:
+            logger.info("edit option found")
+            self.edit(args.domain, args.username, args.password)
+
+        if args.insert:
+            logger.info("insert option found")
+            self.insert(args.domain, args.username, args.password)
+
+        if args.generate:
+            logger.info("generate option found")
+            self.generate()
+
+        if args.check:
+            logger.info("check option found")
+            self.check(args.password)
 
         # TODO add logic here
         ...
 
     def retrieve(self, domain, username):
+        # TODO: Database linking
         pass
 
-    def edit(self, domain=None, username=None, password=None):
-        while not (domain or username or password):
-            print("Please provide an argument with either the -d, -u or -p flags.")
-            break
-        # Placeholder code:
-        if domain:
-            print(domain)
-        if username:
-            print(username)
-        if password:
-            print(password)
-
-    def insert(self, domain=None, username=None, password=None):
-        pass
-
-    @staticmethod
-    def generate():
+    def edit(self, domain, username):
         """
-        Creates a password based on below criteria.
+        Replaces a value with another value.
+
+        Specification of the account credentials are required.
+
+        Usage: kaguya.py [edit] [domain] [username]
+        """
+        self.retrieve(domain, username)
+        logger.info("Account has been found.")
+        replaced_val = str(
+            input(
+                "Enter 'd' to replace the domain, 'u' to replace the username, or 'p' to replace the password."
+            )
+        )
+        replace_val = str(input("What do you want to replace it with?"))
+        if replaced_val == "d":
+            # TODO: Database linking
+            pass
+        if replaced_val == "u":
+            # TODO: Database linking
+            pass
+        if replaced_val == "p":
+            # TODO: Database linking
+            pass
+
+    def insert(self, domain, username, password):
+        """
+        Create a new entry in the database.
+
+        Specification of the account credentials are required.
+
+        Usage: kaguya.py [edit] [domain] [username] [password]
+        """
+        if not domain or not username or not password:
+            print(
+                f"You must provide an argument for the following: {'domain' if not domain else ''} {'username' if not username else ''} {'password' if not password else ''}"
+            )
+            exit()
+        # TODO: Database linking
+        pass
+
+    # The password generator. Takes no arguments and outputs
+    # a single string value which is the password.
+    @staticmethod
+    def generate() -> str:
+        """
+        Creates a password based on strong password criterias.
+
         Checks itself to be a strong password before being returned as a value.
+
+        Usage: kaguya.py [generate]
         """
         upperletters = string.ascii_uppercase
         lowerletters = string.ascii_lowercase
@@ -154,13 +203,18 @@ class HandleArgs:
     def check(password) -> bool:
         """
         Verify the strength of a 'password'.
+
         Returns the strength of the password.
+
         A password is considered strong if:
-            At least 8 characters in length.
-            1 digit or more.
-            1 symbol or more.
-            1 uppercase letter or more.
-            1 lowercase letter or more.
+
+        8 characters in length or more,
+        1 digit or more,
+        1 symbol or more,
+        1 uppercase letter or more,
+        1 lowercase letter or more.
+
+        Usage: kaguya.py [check] [password]
         """
         # Check for input
         if not password:
@@ -194,3 +248,9 @@ class HandleArgs:
             print("Password is strong.") if password_ok else print("Password is weak.")
 
             return password_ok
+
+
+if __name__ == "__main__":
+    parser = create_argparser()
+    args = parser.parse_args()
+    HandleArgs(args)
