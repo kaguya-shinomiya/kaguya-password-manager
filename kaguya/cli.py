@@ -84,37 +84,58 @@ def create_argparser() -> argparse.ArgumentParser:
         help="password for the specified username",
     )
 
+    kaguya_parser.add_argument(
+        "-mu",
+        "--masteruser",
+        type=str,
+        help="login username for kaguya.py",
+    )
+
+    kaguya_parser.add_argument(
+        "-mp",
+        "--masterpass",
+        type=str,
+        help="login password for kaguya.py",
+    )
+
     logger.debug("argparser created")
 
     return kaguya_parser
+
+
+users = {}
 
 
 class HandleArgs:
     def __init__(self, args: argparse.Namespace):
         self.args = args
 
-        if args.retrieve:
-            logger.info("retrieve option found")
-            self.retrieve(args.domain, args.username)
+        if args.masteruser and args.masterpass:
+            if HandleArgs.login_account(args.masteruser, args.masterpass) == True:
+                if args.retrieve:
+                    logger.info("retrieve option found")
+                    self.retrieve(args.domain, args.username)
 
-        if args.edit:
-            logger.info("edit option found")
-            self.edit(args.domain, args.username, args.password)
+                if args.edit:
+                    logger.info("edit option found")
+                    self.edit(args.domain, args.username, args.password)
 
-        if args.insert:
-            logger.info("insert option found")
-            self.insert(args.domain, args.username, args.password)
+                if args.insert:
+                    logger.info("insert option found")
+                    self.insert(args.domain, args.username, args.password)
 
-        if args.generate:
-            logger.info("generate option found")
-            self.generate()
+                if args.generate:
+                    logger.info("generate option found")
+                    self.generate()
 
-        if args.check:
-            logger.info("check option found")
-            self.check(args.password)
+                if args.check:
+                    logger.info("check option found")
+                    self.check(args.password)
 
-        # TODO add logic here
-        ...
+                # TODO add logic here
+                ...
+            else:
+                exit()
 
     def retrieve(self, domain, username):
         # TODO: Database linking
@@ -248,6 +269,63 @@ class HandleArgs:
             print("Password is strong.") if password_ok else print("Password is weak.")
 
             return password_ok
+
+    @staticmethod
+    def login_account(masteruser, masterpass) -> bool:
+        logstat = False
+        tries = 5
+
+        print("Welcome to Kaguya Password Manager!")
+
+        while logstat == False:
+            if masteruser in users:
+                if users[masteruser] == masterpass:
+                    print("Logged in successfully.")
+                    logstat = True
+                    return logstat
+                else:
+                    tries -= 1
+                    if tries > 0:
+                        prompt = str(
+                            input(
+                                "Username or password is incorrect, please try again or sign up using by pressing q."
+                            )
+                        )
+                        if prompt.lower() == "q":
+                            HandleArgs.register_account()
+                        else:
+                            print(f"You have {tries} tries remaining.")
+                    if tries == 0:
+                        print(
+                            "You have failed to login for the 5th time. Please try again in 15 minutes."
+                        )
+                        exit()
+            else:
+                tries -= 1
+                if tries > 0:
+                    prompt = str(
+                        input(
+                            "Username or password is incorrect, please try again or sign up using by pressing q."
+                        )
+                    )
+                    if prompt.lower() == "q":
+                        HandleArgs.register_account()
+                    else:
+                        print(f"You have {tries} tries remaining.")
+                if tries == 0:
+                    print(
+                        "You have failed to login for the 5th time. Please try again in 15 minutes."
+                    )
+                    exit()
+
+    @staticmethod
+    def register_account() -> None:
+        username, password = (
+            str(input("Enter username: ")),
+            str(input("Enter password: ")),
+        )
+        users[username] = password
+        print("Account successfully created.")
 
 
 if __name__ == "__main__":

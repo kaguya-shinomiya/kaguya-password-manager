@@ -1,6 +1,6 @@
 import sys
 
-from kaguya import main
+from kaguya.password_manager import main
 
 if __name__ == "__main__":
     sys.exit(main())
