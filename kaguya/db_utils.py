@@ -11,7 +11,9 @@ DB_FILE = Path(__file__).parent / "data" / "kaguya.db"
 Base = declarative_base()
 
 
-class Chika(Base):
+class Chika(
+    Base
+):  # inherting from Base allows this table to be created automatically when create_all is called later
     __tablename__ = "chikas"
 
     id = Column(Integer, primary_key=True)
@@ -60,6 +62,10 @@ class DbUtils:
         )
         return result.scalars().all()
 
+    def get_all_chikas(self) -> List[Chika]:
+        result = self.session.execute(select(Chika).order_by(Chika.created_at))
+        return result.scalars().all()
+
     def delete_chika(self, id: int):
         self.session.execute(delete(Chika).where(Chika.id == id))
 
@@ -87,6 +93,7 @@ if __name__ == "__main__":
     )
     logger.info(db_utils.select_chika_by_id(1))
     logger.info(db_utils.select_chika_by_name("chikabook"))
+    logger.info(db_utils.get_all_chikas())
     db_utils.delete_chika(1)  # deletes chika's entry
     logger.info(db_utils.select_chika_by_name("chikabook"))
     db_utils.update_chika(
@@ -94,5 +101,6 @@ if __name__ == "__main__":
     )  # change kaguya's entry to kei, irrelevant school field is ignored
     logger.info(db_utils.select_chika_by_id(2))
 
-    db_utils.close_session()
+    db_utils.close_session()  # close session
     os.remove(DB_FILE)  # teardown
+    logger.info("db deleted")
