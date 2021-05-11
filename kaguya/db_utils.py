@@ -1,79 +1,106 @@
-import sqlite3
+import datetime
+import os
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import List
 
 from loguru import logger
+from sqlalchemy import Column, DateTime, Integer, String, create_engine, delete, select
+from sqlalchemy.orm import Session, declarative_base
+
+DB_FILE = Path(__file__).parent / "data" / "kaguya.db"
+Base = declarative_base()
 
 
-class EntityManager:
+class Chika(
+    Base
+):  # inherting from Base allows this table to be created automatically when create_all is called later
+    __tablename__ = "chikas"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    username = Column(String, nullable=False)
+    password = Column(String, nullable=False)
+    domain = Column(String)
+
+    created_at = Column(DateTime, default=datetime.datetime.now)
+
+    def __repr__(self):
+        return f"Chika(id={self.id!r} name={self.name!r} username={self.username!r} password={self.password!r} domain={self.domain!r})"
+
+
+class DbUtils:
     def __init__(self, db_file: Path):
-        self.conn = self._create_connection(db_file)
+        engine = create_engine(f"sqlite:///{DB_FILE}", echo=True)
+        self.session = Session(engine)
 
-    @classmethod
-    def _create_connection(cls, db_file: Path) -> sqlite3.Connection:
-        """
-        Create database connection to SQLite db.
+        Base.metadata.create_all(engine)
 
-        :param db_file: absolute path to db file
-        :returns: Connection object
-        """
-        conn = sqlite3.connect(db_file)
-        logger.info("connected to database")
-        return conn
-
-    def create_table(self, create_table_sql: str) -> None:
-        """create table using `create_table_sql`"""
-        c = self.conn.cursor()
-        c.execute(create_table_sql)
-        logger.info("created credentials table")
-
-    def insert_chika(
+    def create_chika(
         self,
+        domain: str = None,
+        *args,
         name: str,
         username: str,
         password: str,
-    ) -> Tuple:
-        """inserts a new set of credentials"""
-        c = self.conn.cursor()
-        c.execute(SqlCommands.insert_one_blob, [name, username, password])
-        c.execute(SqlCommands.query_one_blob, [name])  # get the entire object
-        return c.fetchone()
+    ):
+        new_chika = Chika(
+            name=name,
+            password=password,
+            username=username,
+            domain=domain,
+        )
+        self.session.add(new_chika)
+        self.session.flush()
 
-    def update_chika(
-        self,
-        chika_name: str,
-        **params: Dict,
-    ) -> Tuple:
-        """updates one set of credentials"""
-        cols_to_set = ", ".join([f"{k} = '{v}'" for (k, v) in params.items()])
-        update_chika_sql = f"""
-            UPDATE credentials
-            SET {cols_to_set}
-            WHERE name = '{chika_name}';
-            """
-        logger.debug(update_chika_sql)
-        c = self.conn.cursor()
-        c.execute(update_chika_sql)
-        c.execute(SqlCommands.query_one_blob, [params.get("name", chika_name)])
-        return c.fetchone()
+    def select_chika_by_id(self, id: int) -> Chika:
+        chika = self.session.execute(select(Chika).filter_by(id=id)).scalar_one()
+        return chika
+
+    def select_chika_by_name(self, name: str) -> List[Chika]:
+        result = self.session.execute(
+            select(Chika).filter_by(name=name).order_by(Chika.created_at)
+        )
+        return result.scalars().all()
+
+    def get_all_chikas(self) -> List[Chika]:
+        result = self.session.execute(select(Chika).order_by(Chika.created_at))
+        return result.scalars().all()
+
+    def delete_chika(self, id: int):
+        self.session.execute(delete(Chika).where(Chika.id == id))
+
+    def update_chika(self, id, **fields):
+        chika = self.session.execute(select(Chika).filter_by(id=id)).scalar_one()
+        for field, field_value in fields.items():
+            setattr(chika, field, field_value)
+        self.session.flush()
+
+    def close_session(self):
+        self.session.close()
 
 
-class SqlCommands:
-    create_credentials_table = """
-        CREATE TABLE IF NOT EXISTS credentials (
-            id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL UNIQUE,
-            username TEXT NOT NULL,
-            password TEXT NOT NULL
-        );
-        """
+if __name__ == "__main__":
+    db_utils = DbUtils(DB_FILE)
+    db_utils.create_chika(
+        name="chikabook",
+        username="chika",
+        password="password",
+    )
+    db_utils.create_chika(
+        name="chikabook",
+        username="kaguya",
+        password="password",
+    )
+    logger.info(db_utils.select_chika_by_id(1))
+    logger.info(db_utils.select_chika_by_name("chikabook"))
+    logger.info(db_utils.get_all_chikas())
+    db_utils.delete_chika(1)  # deletes chika's entry
+    logger.info(db_utils.select_chika_by_name("chikabook"))
+    db_utils.update_chika(
+        2, name="kei", school="Shuchi'in Academy Shuchiin Academy"
+    )  # change kaguya's entry to kei, irrelevant school field is ignored
+    logger.info(db_utils.select_chika_by_id(2))
 
-    insert_one_blob = """
-        INSERT INTO credentials(name, username, password)
-        VALUES(?,?,?);
-        """
-
-    query_one_blob = """
-        SELECT name, username, password FROM credentials
-        WHERE name = ?;
-        """
+    db_utils.close_session()  # close session
+    os.remove(DB_FILE)  # teardown
+    logger.info("db deleted")
