@@ -30,11 +30,12 @@ class Chika(
 
 
 class DbUtils:
-    def __init__(self, db_file: Path):
-        engine = create_engine(f"sqlite:///{DB_FILE}", echo=True)
+    def __init__(self, db_file: Path, echo: bool = True):
+        engine = create_engine(f"sqlite:///{DB_FILE}", echo=echo)
         self.session = Session(engine)
 
         Base.metadata.create_all(engine)
+        logger.debug(f"connected to database @ {DB_FILE}")
 
     def create_chika(
         self,
@@ -52,12 +53,14 @@ class DbUtils:
         )
         self.session.add(new_chika)
         self.session.flush()
+        self.session.commit()
 
     def select_chika_by_id(self, id: int) -> Chika:
         chika = self.session.execute(select(Chika).filter_by(id=id)).scalar_one()
         return chika
 
     def select_chika_by_name(self, name: str) -> List[Chika]:
+        logger.debug(f"selecting entries with name '{name}'")
         result = self.session.execute(
             select(Chika).filter_by(name=name).order_by(Chika.created_at)
         )
@@ -69,18 +72,21 @@ class DbUtils:
 
     def delete_chika(self, id: int):
         self.session.execute(delete(Chika).where(Chika.id == id))
+        self.session.commit()
 
     def update_chika(self, id, **fields):
         chika = self.session.execute(select(Chika).filter_by(id=id)).scalar_one()
         for field, field_value in fields.items():
             setattr(chika, field, field_value)
         self.session.flush()
+        self.session.commit()
 
     def close_session(self):
         self.session.close()
 
 
 if __name__ == "__main__":
+    # for lazy testing
     db_utils = DbUtils(DB_FILE)
     db_utils.create_chika(
         name="chikabook",

@@ -4,12 +4,13 @@ import argparse
 import random
 import re
 import string
+import sys
 
 import pyperclip
 from loguru import logger
 
 from .constants import DB_FILE
-from .db_utils import DbUtils
+from .db_utils import Chika, DbUtils
 
 # Description
 _desc = """Welcome to Kaguya Password Manager!
@@ -122,9 +123,9 @@ users = {}
 
 
 class ArgsHandler:
-    def __init__(self, args: argparse.Namespace):
+    def __init__(self, args: argparse.Namespace, db_echo=True):
         self.args = args
-        self.db_utils = DbUtils(DB_FILE)
+        self.db_utils = DbUtils(DB_FILE, echo=db_echo)
 
     def dispatch(self):
         args = self.args  # create local ref
@@ -137,18 +138,62 @@ class ArgsHandler:
         elif args.retrieve:
             logger.debug("retrieve option found")
             res = db_utils.select_chika_by_name(args.retrieve)
+            logger.debug(res)
             if len(res) == 0:
                 print(f"No entries found for {args.retrieve}")
             elif len(res) == 1:
+                logger.info(f"Found 1 entry for {args.retrieve}")
+
                 # TODO print or pyperclip or something
                 pass
             else:
-                # TODO display results and ask which one to retrieve
-                pass
+
+                def get_selection() -> Chika:
+                    selection = input("Select an account (press Enter to exit): ")
+                    if selection == "":  # they pressed
+                        logger.info("exiting program")
+                        sys.exit()
+                    if not selection.isnumeric():
+                        logger.error(f"received invalid number '{selection}'")
+                        return get_selection()
+                    try:
+                        selected_chika = res[int(selection) - 1]
+                        logger.info(f"Selected account is {selected_chika}")
+                        return selected_chika
+                    except IndexError:
+                        logger.error(f"selecction {selection} is out of range!")
+                        return get_selection()
+
+                for i, entry in enumerate(res, 1):
+                    print(f"{i}) {entry.username}")
+                print(f"Found {len(res)} entries for {args.retrieve}")
+                chika = get_selection()
+
+                pyperclip.copy(chika.password)
+                logger.info('password copied to clipboard')
+                return chika.password
+
         elif args.new:
             logger.debug("new option found")
             # TODO display some creation screen prompting for info
-            pass
+            print("Creating a new account")
+            new_chika_name = input("Name of new account: ")
+            new_username = input("Username: ")
+            new_password = input("Password (hit Enter to auto-generate): ")
+            new_domain = input("Domain (optional): ") or None
+
+            if not new_password:
+                # TODO auto-gen password
+                pass
+
+            db_utils.create_chika(
+                name=new_chika_name,
+                username=new_username,
+                password=new_password,
+                domain=new_domain,
+            )
+
+            logger.debug(f"Created new entry for {new_chika_name}")
         elif args.edit:
             logger.debug("edit option found")
             res = db_utils.select_chika_by_name(args.retrieve)
