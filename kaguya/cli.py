@@ -7,6 +7,7 @@ import string
 
 import pyperclip
 from loguru import logger
+from argon2 import PasswordHasher
 
 # Description
 _desc = """Welcome to Kaguya Password Manager!
@@ -104,6 +105,7 @@ def create_argparser() -> argparse.ArgumentParser:
 
 
 users = {}
+ph = PasswordHasher()
 
 
 class HandleArgs:
@@ -279,9 +281,10 @@ class HandleArgs:
 
         while logstat == False:
             if masteruser in users:
-                if users[masteruser] == masterpass:
+                logstat = ph.verify(users[masteruser], masterpass)
+                print(users[masteruser])
+                if logstat == True:
                     print("Logged in successfully.")
-                    logstat = True
                     return logstat
                 else:
                     tries -= 1
@@ -324,7 +327,9 @@ class HandleArgs:
             str(input("Enter username: ")),
             str(input("Enter password: ")),
         )
-        users[username] = password
+        hash = ph.hash(password)
+        users[username] = hash
+        print(hash)
         print("Account successfully created.")
 
 
