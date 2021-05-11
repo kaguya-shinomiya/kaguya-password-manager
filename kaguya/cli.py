@@ -10,7 +10,7 @@ from . import master_db
 from loguru import logger
 from argon2 import PasswordHasher, exceptions
 from pathlib import Path
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import exc
 
 # Description
 _desc = """Welcome to Kaguya Password Manager!
@@ -277,88 +277,71 @@ class HandleArgs:
 
     @staticmethod
     def login_account(masteruser, masterpass) -> bool:
-        logstat = False
-        tries = 5
 
         DB_FILE = Path(__file__).parent / "data" / "testmasteruser.db"
-        Base = declarative_base()
         masterdb = master_db.MasterDbUtils(DB_FILE)
 
         print("Welcome to Kaguya Password Manager!")
 
-        # Two key problems:
-        # 1. If user logs in without an account, then creates an account but enters the wrong credentials during prompt,
-        # they will be stuck in the while loop since parameters are only requested once.
-        # 2. If user logs in with the wrong password, there is no way to exit the loop, since parameters are only
-        # requested once.
+        # Problem:
+        # If conflicting master username exists, a list of accounts is returned.
 
-        while logstat == False:
-            if masterdb.select_account_by_masteruser(
-                masteruser
-            ):  # check if the username is in the database
-                account = masterdb.select_account_by_masteruser(masteruser)[0]
-                dbpass = account.masterpass  # retrieve the password in database
-                try:
-                    logstat = ph.verify(dbpass, masterpass)  # compare the passwords
-                except exceptions.VerifyMismatchError as e:
-                    print("Password mismatch.")
-                print(dbpass)
+        if masterdb.select_account_by_masteruser(
+            masteruser
+        ):  # check if the username is in the database
+            account = masterdb.select_account_by_masteruser(masteruser)[0]
+            dbpass = account.masterpass  # retrieve the password in database
+            try:
+                logstat = ph.verify(dbpass, masterpass)  # compare the passwords
                 if logstat == True:
                     print("Logged in successfully.")
                     masterdb.close_session()
                     return logstat
+            except exceptions.VerifyMismatchError as e:
+                prompt = str(
+                    input(
+                        "Username or password is incorrect, please try again or sign up using by pressing q. \n"
+                    )
+                )
+                if prompt.lower() == "q":
+                    HandleArgs.register_account()
                 else:
-                    tries -= 1
-                    if tries > 0:
-                        prompt = str(
-                            input(
-                                "Username or password is incorrect, please try again or sign up using by pressing q."
-                            )
-                        )
-                        if prompt.lower() == "q":
-                            HandleArgs.register_account()
-                        else:
-                            print(f"You have {tries} tries remaining.")
-                    if tries == 0:
-                        print(
-                            "You have failed to login for the 5th time. Please try again in 15 minutes."
-                        )
-                        masterdb.close_session()
-                        exit()
-            else:
-                tries -= 1
-                if tries > 0:
-                    prompt = str(
-                        input(
-                            "Username or password is incorrect, please try again or sign up using by pressing q."
-                        )
-                    )
-                    if prompt.lower() == "q":
-                        HandleArgs.register_account()
-                    else:
-                        print(f"You have {tries} tries remaining.")
-                if tries == 0:
-                    print(
-                        "You have failed to login for the 5th time. Please try again in 15 minutes."
-                    )
                     masterdb.close_session()
                     exit()
+        else:
+            prompt = str(
+                input(
+                    "Username or password is incorrect, please try again or sign up using by pressing q. \n"
+                )
+            )
+            if prompt.lower() == "q":
+                HandleArgs.register_account()
+            else:
+                masterdb.close_session()
+                exit()
 
     @staticmethod
     def register_account() -> None:
         DB_FILE = Path(__file__).parent / "data" / "testmasteruser.db"
-        Base = declarative_base()
         masterdb = master_db.MasterDbUtils(DB_FILE)
 
-        username, password = (
-            str(input("Enter username: ")),
-            str(input("Enter password: ")),
-        )
-        hash = ph.hash(password)
-        masterdb.create_account(username, hash)
-        print(hash)
-        print("Account successfully created.")
-        masterdb.close_session()
+        def inputs():
+            username, password = (
+                str(input("Enter username: ")),
+                str(input("Enter password: ")),
+            )
+            hash = ph.hash(password)
+            return (username, hash)
+
+        accountsuccess = False
+        while accountsuccess != True:
+            credentials = inputs()
+            if masterdb.create_account(credentials[0], credentials[1]):
+                print(hash)
+                print("Account successfully created.")
+                masterdb.close_session()
+                accountsuccess = True
+                print("Please try logging in with your new account.")
 
 
 if __name__ == "__main__":

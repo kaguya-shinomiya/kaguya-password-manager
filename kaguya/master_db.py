@@ -1,11 +1,21 @@
 import datetime
+from enum import unique
 import os
 from pathlib import Path
 from typing import List
 
 from loguru import logger
-from sqlalchemy import Column, DateTime, Integer, String, create_engine, delete, select
-from sqlalchemy.orm import Session, declarative_base
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Integer,
+    String,
+    create_engine,
+    delete,
+    exc,
+    select,
+)
+from sqlalchemy.orm import Session, declarative_base, session
 
 DB_FILE = Path(__file__).parent / "data" / "testmasteruser.db"
 Base = declarative_base()
@@ -17,7 +27,7 @@ class Account(
     __tablename__ = "master"
 
     id = Column(Integer, primary_key=True)
-    masteruser = Column(String, nullable=False)
+    masteruser = Column(String, nullable=False, unique=True)
     masterpass = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.now)
 
@@ -42,8 +52,12 @@ class MasterDbUtils:
             masterpass=masterpass,
         )
         self.session.add(new_user)
-        self.session.flush()
-        self.session.commit()
+        try:
+            self.session.commit()
+            return True
+        except exc.IntegrityError:
+            print("Username has been taken, please try again.")
+            self.session.rollback()
 
     def select_account_by_id(self, id: int) -> Account:
         account = self.session.execute(select(Account).filter_by(id=id)).scalar_one()
