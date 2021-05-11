@@ -60,7 +60,6 @@ class DbUtils:
             domain=domain,
         )
         self.session.add(new_chika)
-        self.session.flush()
         self.session.commit()
 
     def select_chika_by_id(self, id: int) -> Chika:
@@ -86,7 +85,6 @@ class DbUtils:
         chika = self.session.execute(select(Chika).filter_by(id=id)).scalar_one()
         for field, field_value in fields.items():
             setattr(chika, field, field_value)
-        self.session.flush()
         self.session.commit()
 
     def close_session(self):
