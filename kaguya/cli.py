@@ -6,8 +6,11 @@ import re
 import string
 
 import pyperclip
+from . import master_db
 from loguru import logger
-from argon2 import PasswordHasher
+from argon2 import PasswordHasher, exceptions
+from pathlib import Path
+from sqlalchemy.orm import declarative_base
 
 # Description
 _desc = """Welcome to Kaguya Password Manager!
@@ -277,14 +280,32 @@ class HandleArgs:
         logstat = False
         tries = 5
 
+        DB_FILE = Path(__file__).parent / "data" / "testmasteruser.db"
+        Base = declarative_base()
+        masterdb = master_db.MasterDbUtils(DB_FILE)
+
         print("Welcome to Kaguya Password Manager!")
 
+        # Two key problems:
+        # 1. If user logs in without an account, then creates an account but enters the wrong credentials during prompt,
+        # they will be stuck in the while loop since parameters are only requested once.
+        # 2. If user logs in with the wrong password, there is no way to exit the loop, since parameters are only
+        # requested once.
+
         while logstat == False:
-            if masteruser in users:
-                logstat = ph.verify(users[masteruser], masterpass)
-                print(users[masteruser])
+            if masterdb.select_account_by_masteruser(
+                masteruser
+            ):  # check if the username is in the database
+                account = masterdb.select_account_by_masteruser(masteruser)[0]
+                dbpass = account.masterpass  # retrieve the password in database
+                try:
+                    logstat = ph.verify(dbpass, masterpass)  # compare the passwords
+                except exceptions.VerifyMismatchError as e:
+                    print("Password mismatch.")
+                print(dbpass)
                 if logstat == True:
                     print("Logged in successfully.")
+                    masterdb.close_session()
                     return logstat
                 else:
                     tries -= 1
@@ -302,6 +323,7 @@ class HandleArgs:
                         print(
                             "You have failed to login for the 5th time. Please try again in 15 minutes."
                         )
+                        masterdb.close_session()
                         exit()
             else:
                 tries -= 1
@@ -319,18 +341,24 @@ class HandleArgs:
                     print(
                         "You have failed to login for the 5th time. Please try again in 15 minutes."
                     )
+                    masterdb.close_session()
                     exit()
 
     @staticmethod
     def register_account() -> None:
+        DB_FILE = Path(__file__).parent / "data" / "testmasteruser.db"
+        Base = declarative_base()
+        masterdb = master_db.MasterDbUtils(DB_FILE)
+
         username, password = (
             str(input("Enter username: ")),
             str(input("Enter password: ")),
         )
         hash = ph.hash(password)
-        users[username] = hash
+        masterdb.create_account(username, hash)
         print(hash)
         print("Account successfully created.")
+        masterdb.close_session()
 
 
 if __name__ == "__main__":
