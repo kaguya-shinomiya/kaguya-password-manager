@@ -7,7 +7,8 @@ from loguru import logger
 from sqlalchemy import Column, DateTime, Integer, String, create_engine, delete, select
 from sqlalchemy.orm import Session, declarative_base
 
-DB_FILE = Path(__file__).parent / "data" / "kaguya.db"
+from .constants import DB_FILE
+
 Base = declarative_base()
 
 

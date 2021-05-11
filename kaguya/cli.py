@@ -8,6 +8,9 @@ import string
 import pyperclip
 from loguru import logger
 
+from .constants import DB_FILE
+from .db_utils import DbUtils
+
 # Description
 _desc = """Welcome to Kaguya Password Manager!
 
@@ -29,22 +32,34 @@ def create_argparser() -> argparse.ArgumentParser:
     )
 
     kaguya_parser.add_argument(
+        "masterpass",
+        nargs="?",  # this sets it to optional
+        default="",  # required default value for nargs='?'
+        type=str,
+        help="master password",
+    )
+
+    kaguya_parser.add_argument(
         "-r",
         "--retrieve",
-        action="store_true",
-        help="activate the search and retrieve function",
+        type=str,  # this should be the account name to search for
+        help="name of account to retrieve credentials for",
     )
 
     kaguya_parser.add_argument(
         "-e",
         "--edit",
-        action="store_true",
-        help="activate the edit function to edit an existing entry",
+        type=str,  # account name
+        help="name of account to edit",
     )
 
     kaguya_parser.add_argument(
-        "-i",
-        "--insert",
+        "-d", "--delete", type=str, help="name of account to delete"
+    )
+
+    kaguya_parser.add_argument(
+        "-n",
+        "--new",
         action="store_true",
         help="activate the insert function to create a new entry",
     )
@@ -63,12 +78,12 @@ def create_argparser() -> argparse.ArgumentParser:
         help="activate the password checker",
     )
 
-    kaguya_parser.add_argument(
-        "-d",
-        "--domain",
-        type=str,
-        help="domain that the account is used for",
-    )
+    # kaguya_parser.add_argument(
+    #     "-d",
+    #     "--domain",
+    #     type=str,
+    #     help="domain that the account is used for",
+    # )
 
     kaguya_parser.add_argument(
         "-u",
@@ -106,36 +121,69 @@ def create_argparser() -> argparse.ArgumentParser:
 users = {}
 
 
-class HandleArgs:
+class ArgsHandler:
     def __init__(self, args: argparse.Namespace):
         self.args = args
+        self.db_utils = DbUtils(DB_FILE)
 
-        if args.masteruser and args.masterpass:
-            if HandleArgs.login_account(args.masteruser, args.masterpass) == True:
-                if args.retrieve:
-                    logger.info("retrieve option found")
-                    self.retrieve(args.domain, args.username)
+    def dispatch(self):
+        args = self.args  # create local ref
+        db_utils = self.db_utils  # local ref
 
-                if args.edit:
-                    logger.info("edit option found")
-                    self.edit(args.domain, args.username, args.password)
-
-                if args.insert:
-                    logger.info("insert option found")
-                    self.insert(args.domain, args.username, args.password)
-
-                if args.generate:
-                    logger.info("generate option found")
-                    self.generate()
-
-                if args.check:
-                    logger.info("check option found")
-                    self.check(args.password)
-
-                # TODO add logic here
-                ...
+        if args.masterpass:
+            logger.debug("master password found")
+            # TODO validate main password
+            pass
+        elif args.retrieve:
+            logger.debug("retrieve option found")
+            res = db_utils.select_chika_by_name(args.retrieve)
+            if len(res) == 0:
+                print(f"No entries found for {args.retrieve}")
+            elif len(res) == 1:
+                # TODO print or pyperclip or something
+                pass
             else:
-                exit()
+                # TODO display results and ask which one to retrieve
+                pass
+        elif args.new:
+            logger.debug("new option found")
+            # TODO display some creation screen prompting for info
+            pass
+        elif args.edit:
+            logger.debug("edit option found")
+            res = db_utils.select_chika_by_name(args.retrieve)
+            if len(res) == 0:
+                print(f"No entries found for {args.retrieve}")
+            elif len(res) == 1:
+                # TODO display some editing interface i guess
+                pass
+            else:
+                # TODO display results and ask which one to edit
+                pass
+        elif args.delete:
+            logger.debug("delete option found")
+            res = db_utils.select_chika_by_name(args.retrieve)
+            if len(res) == 0:
+                print(f"No entries found for {args.retrieve}")
+            elif len(res) == 1:
+                # TODO confirmation first
+                # TODO delete the damned entry
+                pass
+            else:
+                # TODO display results and ask which one to delete
+                pass
+        elif args.generate:
+            logger.info("generate option found")
+            self.generate()
+        elif args.check:
+            logger.info("check option found")
+            self.check(args.password)
+        else:
+            logger.debug("no options were declared")
+            # if we reach here, then no arguments were passed
+            # TODO prompt for masterpass
+            # display options selection screen
+            pass
 
     def retrieve(self, domain, username):
         # TODO: Database linking
@@ -212,8 +260,8 @@ class HandleArgs:
         random.shuffle(strong_password)
         strong_password = "".join(strong_password)
         # Check that it is strong
-        if not HandleArgs.check(strong_password):
-            HandleArgs.generate()
+        if not ArgsHandler.check(strong_password):
+            ArgsHandler.generate()
         else:
             print("Password generated and copied to the clipboard.")
             pyperclip.copy(strong_password)
@@ -292,7 +340,7 @@ class HandleArgs:
                             )
                         )
                         if prompt.lower() == "q":
-                            HandleArgs.register_account()
+                            ArgsHandler.register_account()
                         else:
                             print(f"You have {tries} tries remaining.")
                     if tries == 0:
@@ -309,7 +357,7 @@ class HandleArgs:
                         )
                     )
                     if prompt.lower() == "q":
-                        HandleArgs.register_account()
+                        ArgsHandler.register_account()
                     else:
                         print(f"You have {tries} tries remaining.")
                 if tries == 0:
@@ -331,4 +379,4 @@ class HandleArgs:
 if __name__ == "__main__":
     parser = create_argparser()
     args = parser.parse_args()
-    HandleArgs(args)
+    ArgsHandler(args)
