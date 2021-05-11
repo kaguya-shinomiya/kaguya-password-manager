@@ -28,6 +28,14 @@ class Chika(
     def __repr__(self):
         return f"Chika(id={self.id!r} name={self.name!r} username={self.username!r} password={self.password!r} domain={self.domain!r})"
 
+    def __str__(self):
+        return f"""
+    Name: {self.name}
+    Username: {self.username}
+    Password: {self.password}
+    Domain: {self.domain or ''}
+        """
+
 
 class DbUtils:
     def __init__(self, db_file: Path, echo: bool = True):

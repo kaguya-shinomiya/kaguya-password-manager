@@ -135,6 +135,7 @@ class ArgsHandler:
             logger.debug("master password found")
             # TODO validate main password
             pass
+
         elif args.retrieve:
             logger.debug("retrieve option found")
             res = db_utils.select_chika_by_name(args.retrieve)
@@ -158,7 +159,7 @@ class ArgsHandler:
                         return get_selection()
                     try:
                         selected_chika = res[int(selection) - 1]
-                        logger.info(f"Selected account is {selected_chika}")
+                        logger.info(f"Selected account: {selected_chika}")
                         return selected_chika
                     except IndexError:
                         logger.error(f"selecction {selection} is out of range!")
@@ -168,9 +169,8 @@ class ArgsHandler:
                     print(f"{i}) {entry.username}")
                 print(f"Found {len(res)} entries for {args.retrieve}")
                 chika = get_selection()
-
                 pyperclip.copy(chika.password)
-                logger.info('password copied to clipboard')
+                logger.info("password copied to clipboard")
                 return chika.password
 
         elif args.new:
@@ -211,6 +211,12 @@ class ArgsHandler:
             if len(res) == 0:
                 print(f"No entries found for {args.retrieve}")
             elif len(res) == 1:
+                chika = res[0]
+                print(
+                    f"found 1 entry for {args.retrieve} with username '{chika.username}'"
+                )
+                confirmation = input("confirm delete? (y/n) ")
+
                 # TODO confirmation first
                 # TODO delete the damned entry
                 pass
