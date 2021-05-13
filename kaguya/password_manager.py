@@ -1,9 +1,17 @@
+import os
+import sys
+
+from loguru import logger
+
 from . import cli
+from .constants import DB_FILE
 
 
 def main():
     parser = cli.create_argparser()
-    args = parser.parse_args()
-    cli.HandleArgs(args)
+    args = parser.parse_args(sys.argv[1:])  # pass the argvs in explicity for testing
+    logger.debug(args)
+    handler = cli.ArgsHandler(args)
+    handler.dispatch()
 
-    # TODO logic for handling args
+    # os.remove(DB_FILE)  # for testing only
