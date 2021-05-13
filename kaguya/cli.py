@@ -146,7 +146,7 @@ class ArgsHandler:
 
                         def get_selection() -> Chika:
                             selection = input(
-                                "Select an account (press Enter to exit): "
+                                "Select an account number (press Enter to exit): "
                             )
                             if selection == "":  # they pressed
                                 logger.info("exiting program")
