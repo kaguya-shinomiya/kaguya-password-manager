@@ -11,7 +11,6 @@ from . import master_db
 from loguru import logger
 from argon2 import PasswordHasher, exceptions
 from pathlib import Path
-from sqlalchemy import exc
 
 from .constants import DB_FILE
 from .db_utils import Chika, DbUtils
@@ -128,9 +127,14 @@ class ArgsHandler:
         args = self.args  # create local ref
         db_utils = self.db_utils  # local ref
 
-        if args.masteruser and args.masterpass:
-            if ArgsHandler.login_account(args.masteruser, args.masterpass) == True:
+        while not args.masteruser and not args.masterpass:
+            args.masteruser = input("Enter username: ")
+            args.masterpass = input("Enter password: ")
 
+        logger.info(f"{args.masteruser} and {args.masterpass} found.")
+
+        if args.masteruser and args.masterpass:
+            if ArgsHandler.login_account(args.masteruser, args.masterpass):
                 if args.retrieve:
                     logger.debug("retrieve option found")
                     res = db_utils.select_chika_by_name(args.retrieve)
@@ -384,11 +388,11 @@ class ArgsHandler:
             dbpass = account.masterpass  # retrieve the password in database
             try:
                 logstat = ph.verify(dbpass, masterpass)  # compare the passwords
-                if logstat == True:
+                if logstat:
                     print("Logged in successfully.")
                     masterdb.close_session()
                     return logstat
-            except exceptions.VerifyMismatchError as e:
+            except exceptions.VerifyMismatchError:
                 prompt = str(
                     input(
                         "Username or password is incorrect, please try again or sign up using by pressing q. \n"
@@ -425,7 +429,7 @@ class ArgsHandler:
             return (username, hash)
 
         accountsuccess = False
-        while accountsuccess != True:
+        while not accountsuccess:
             credentials = inputs()
             if masterdb.create_account(credentials[0], credentials[1]):
                 print(hash)
