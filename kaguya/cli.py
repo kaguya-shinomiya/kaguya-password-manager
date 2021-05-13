@@ -37,14 +37,6 @@ def create_argparser() -> argparse.ArgumentParser:
     )
 
     kaguya_parser.add_argument(
-        "masterpass",
-        nargs="?",  # this sets it to optional
-        default="",  # required default value for nargs='?'
-        type=str,
-        help="master password",
-    )
-
-    kaguya_parser.add_argument(
         "-r",
         "--retrieve",
         type=str,  # this should be the account name to search for
@@ -136,110 +128,110 @@ class ArgsHandler:
         args = self.args  # create local ref
         db_utils = self.db_utils  # local ref
 
-        if args.masterpass:
-            logger.debug("master password found")
-            # TODO validate main password
-            pass
+        if args.masteruser and args.masterpass:
+            if ArgsHandler.login_account(args.masteruser, args.masterpass) == True:
 
-        elif args.retrieve:
-            logger.debug("retrieve option found")
-            res = db_utils.select_chika_by_name(args.retrieve)
-            logger.debug(res)
-            if len(res) == 0:
-                print(f"No entries found for {args.retrieve}")
-            elif len(res) == 1:
-                logger.info(f"Found 1 entry for {args.retrieve}")
+                if args.retrieve:
+                    logger.debug("retrieve option found")
+                    res = db_utils.select_chika_by_name(args.retrieve)
+                    logger.debug(res)
+                    if len(res) == 0:
+                        print(f"No entries found for {args.retrieve}")
+                    elif len(res) == 1:
+                        logger.info(f"Found 1 entry for {args.retrieve}")
 
-                # TODO print or pyperclip or something
-                pass
-            else:
+                        # TODO print or pyperclip or something
+                        pass
+                    else:
 
-                def get_selection() -> Chika:
-                    selection = input("Select an account (press Enter to exit): ")
-                    if selection == "":  # they pressed
-                        logger.info("exiting program")
-                        sys.exit()
-                    if not selection.isnumeric():
-                        logger.error(f"received invalid number '{selection}'")
-                        return get_selection()
-                    try:
-                        selected_chika = res[int(selection) - 1]
-                        logger.info(f"Selected account: {selected_chika}")
-                        return selected_chika
-                    except IndexError:
-                        logger.error(f"selecction {selection} is out of range!")
-                        return get_selection()
+                        def get_selection() -> Chika:
+                            selection = input(
+                                "Select an account (press Enter to exit): "
+                            )
+                            if selection == "":  # they pressed
+                                logger.info("exiting program")
+                                sys.exit()
+                            if not selection.isnumeric():
+                                logger.error(f"received invalid number '{selection}'")
+                                return get_selection()
+                            try:
+                                selected_chika = res[int(selection) - 1]
+                                logger.info(f"Selected account: {selected_chika}")
+                                return selected_chika
+                            except IndexError:
+                                logger.error(f"selecction {selection} is out of range!")
+                                return get_selection()
 
-                for i, entry in enumerate(res, 1):
-                    print(f"{i}) {entry.username}")
-                print(f"Found {len(res)} entries for {args.retrieve}")
-                chika = get_selection()
-                pyperclip.copy(chika.password)
-                logger.info("password copied to clipboard")
-                return chika.password
+                        for i, entry in enumerate(res, 1):
+                            print(f"{i}) {entry.username}")
+                        print(f"Found {len(res)} entries for {args.retrieve}")
+                        chika = get_selection()
+                        pyperclip.copy(chika.password)
+                        logger.info("password copied to clipboard")
+                        return chika.password
 
-        elif args.new:
-            logger.debug("new option found")
-            # TODO display some creation screen prompting for info
-            print("Creating a new account")
-            new_chika_name = input("Name of new account: ")
-            new_username = input("Username: ")
-            new_password = input("Password (hit Enter to auto-generate): ")
-            new_domain = input("Domain (optional): ") or None
+                elif args.new:
+                    logger.debug("new option found")
+                    # TODO display some creation screen prompting for info
+                    print("Creating a new account")
+                    new_chika_name = input("Name of new account: ")
+                    new_username = input("Username: ")
+                    new_password = input("Password (hit Enter to auto-generate): ")
+                    new_domain = input("Domain (optional): ") or None
 
-            if not new_password:
-                # TODO auto-gen password
-                pass
+                    if not new_password:
+                        # TODO auto-gen password
+                        pass
 
-            db_utils.create_chika(
-                name=new_chika_name,
-                username=new_username,
-                password=new_password,
-                domain=new_domain,
-            )
+                    db_utils.create_chika(
+                        name=new_chika_name,
+                        username=new_username,
+                        password=new_password,
+                        domain=new_domain,
+                    )
 
-            logger.debug(f"Created new entry for {new_chika_name}")
-        elif args.edit:
-            logger.debug("edit option found")
-            res = db_utils.select_chika_by_name(args.retrieve)
-            if len(res) == 0:
-                print(f"No entries found for {args.retrieve}")
-            elif len(res) == 1:
-                # TODO display some editing interface i guess
-                pass
-            else:
-                # TODO display results and ask which one to edit
-                pass
-        elif args.delete:
-            logger.debug("delete option found")
-            res = db_utils.select_chika_by_name(args.retrieve)
-            if len(res) == 0:
-                print(f"No entries found for {args.retrieve}")
-            elif len(res) == 1:
-                chika = res[0]
-                print(
-                    f"found 1 entry for {args.retrieve} with username '{chika.username}'"
-                )
-                confirmation = input("confirm delete? (y/n) ")
+                    logger.debug(f"Created new entry for {new_chika_name}")
+                elif args.edit:
+                    logger.debug("edit option found")
+                    res = db_utils.select_chika_by_name(args.retrieve)
+                    if len(res) == 0:
+                        print(f"No entries found for {args.retrieve}")
+                    elif len(res) == 1:
+                        # TODO display some editing interface i guess
+                        pass
+                    else:
+                        # TODO display results and ask which one to edit
+                        pass
+                elif args.delete:
+                    logger.debug("delete option found")
+                    res = db_utils.select_chika_by_name(args.retrieve)
+                    if len(res) == 0:
+                        print(f"No entries found for {args.retrieve}")
+                    elif len(res) == 1:
+                        chika = res[0]
+                        print(
+                            f"found 1 entry for {args.retrieve} with username '{chika.username}'"
+                        )
+                        confirmation = input("confirm delete? (y/n) ")
 
-                # TODO confirmation first
-                # TODO delete the damned entry
-                pass
-            else:
-                # TODO display results and ask which one to delete
-                pass
-        elif args.generate:
-            logger.info("generate option found")
-            self.generate()
-        elif args.check:
-            logger.info("check option found")
-            self.check(args.password)
-        else:
-            logger.debug("no options were declared")
-            # if we reach here, then no arguments were passed
-            # TODO prompt for masterpass
-            # display options selection screen
-            pass
+                        # TODO confirmation first
+                        # TODO delete the damned entry
+                        pass
+                    else:
+                        # TODO display results and ask which one to delete
+                        pass
+                elif args.generate:
+                    logger.info("generate option found")
+                    self.generate()
+                elif args.check:
+                    logger.info("check option found")
+                    self.check(args.password)
+                else:
+                    logger.debug("no options were declared")
+                    # if we reach here, then no arguments were passed
+                    # TODO prompt for masterpass
+                    # display options selection screen
+                    pass
 
     def retrieve(self, domain, username):
         # TODO: Database linking
@@ -403,7 +395,7 @@ class ArgsHandler:
                     )
                 )
                 if prompt.lower() == "q":
-                    HandleArgs.register_account()
+                    ArgsHandler.register_account()
                 else:
                     masterdb.close_session()
                     exit()
@@ -414,7 +406,7 @@ class ArgsHandler:
                 )
             )
             if prompt.lower() == "q":
-                HandleArgs.register_account()
+                ArgsHandler.register_account()
             else:
                 masterdb.close_session()
                 exit()
